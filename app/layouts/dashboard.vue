@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from 'vue'
-import { Home, BarChart3, Users, DollarSign, Settings, FileText, LogOut } from 'lucide-vue-next'
+import { Home, BarChart3, Users, DollarSign, Settings, FileText, LogOut, GraduationCap } from 'lucide-vue-next'
 
 // Get auth data
 const { user, profile, logout, isLoading } = useAuth()
@@ -20,6 +20,13 @@ const navigationItems = computed(() => {
     )
   }
   
+  // Add sales-related items
+  if (profile.value?.role === 'sales' || profile.value?.role === 'head_sales') {
+    baseItems.push(
+      { name: 'Sales', href: '/sales', icon: 'graduation-cap' }
+    )
+  }
+  
   return baseItems
 })
 
@@ -33,6 +40,7 @@ const getIconComponent = (iconName) => {
     chart: BarChart3,
     users: Users,
     'dollar-sign': DollarSign,
+    'graduation-cap': GraduationCap,
     settings: Settings,
     'file-text': FileText
   }

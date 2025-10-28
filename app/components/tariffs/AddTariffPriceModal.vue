@@ -24,7 +24,7 @@ interface Props {
 
 interface Emits {
   'update:open': [value: boolean]
-  'add-price': [tariffId: string, name: string, discount: number]
+  'add-price': [tariffId: string, name: string, price: number]
 }
 
 const props = defineProps<Props>()
@@ -32,19 +32,59 @@ const emit = defineEmits<Emits>()
 
 const selectedTariffId = ref('')
 const priceName = ref('')
-const discount = ref(0)
+const price = ref<number | undefined>(undefined)
+const priceDisplay = ref('')
 const isSubmitting = ref(false)
 
+// Format price for display
+const formatPriceDisplay = (value: number) => {
+  return new Intl.NumberFormat('uz-UZ', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  }).format(value)
+}
+
+// Handle price input changes
+const handlePriceInput = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  const rawValue = target.value.replace(/[^0-9]/g, '') // Remove all non-numeric characters
+  
+  if (rawValue === '') {
+    price.value = undefined
+    priceDisplay.value = ''
+    return
+  }
+  
+  const numericValue = parseInt(rawValue)
+  price.value = numericValue
+  priceDisplay.value = formatPriceDisplay(numericValue)
+}
+
+// Handle focus - show raw number for editing
+const handlePriceFocus = () => {
+  if (price.value) {
+    priceDisplay.value = price.value.toString()
+  }
+}
+
+// Handle blur - show formatted number
+const handlePriceBlur = () => {
+  if (price.value) {
+    priceDisplay.value = formatPriceDisplay(price.value)
+  }
+}
+
 const handleSubmit = async () => {
-  if (!selectedTariffId.value || !priceName.value.trim()) return
+  if (!selectedTariffId.value || !priceName.value.trim() || !price.value || price.value <= 0) return
   
   isSubmitting.value = true
-  emit('add-price', selectedTariffId.value, priceName.value.trim(), discount.value)
+  emit('add-price', selectedTariffId.value, priceName.value.trim(), price.value)
   
   // Reset form
   selectedTariffId.value = ''
   priceName.value = ''
-  discount.value = 0
+  price.value = undefined
+  priceDisplay.value = ''
   isSubmitting.value = false
   emit('update:open', false)
 }
@@ -52,7 +92,8 @@ const handleSubmit = async () => {
 const handleCancel = () => {
   selectedTariffId.value = ''
   priceName.value = ''
-  discount.value = 0
+  price.value = undefined
+  priceDisplay.value = ''
   emit('update:open', false)
 }
 
@@ -84,7 +125,7 @@ watch(() => props.open, (isOpen) => {
       <DialogHeader>
         <DialogTitle>Add Tariff Price</DialogTitle>
         <DialogDescription>
-          Add a pricing option to an existing tariff. You can set a discount percentage (0% for no discount).
+          Add a pricing option to an existing tariff. Enter the price amount in UZS.
         </DialogDescription>
       </DialogHeader>
       
@@ -121,19 +162,21 @@ watch(() => props.open, (isOpen) => {
         </div>
         
         <div class="space-y-2">
-          <label for="discount-input" class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-            Discount Percentage
+          <label for="price-input" class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+            Price (UZS)
           </label>
           <Input
-            id="discount-input"
-            v-model.number="discount"
-            type="number"
-            placeholder="0"
-            min="0"
-            max="100"
+            id="price-input"
+            v-model="priceDisplay"
+            type="text"
+            placeholder="10,000,000"
             :disabled="isSubmitting"
+            required
+            @input="handlePriceInput"
+            @focus="handlePriceFocus"
+            @blur="handlePriceBlur"
           />
-          <p class="text-xs text-muted-foreground">Enter 0 for no discount</p>
+          <p class="text-xs text-muted-foreground">Enter price in Uzbek Som (e.g., 10,000,000)</p>
         </div>
         
         <DialogFooter>
@@ -147,7 +190,7 @@ watch(() => props.open, (isOpen) => {
           </Button>
           <Button
             type="submit"
-            :disabled="!selectedTariffId || !priceName.trim() || isSubmitting"
+            :disabled="!selectedTariffId || !priceName.trim() || !price || (price && price <= 0) || isSubmitting"
           >
             {{ isSubmitting ? 'Adding...' : 'Add Price' }}
           </Button>

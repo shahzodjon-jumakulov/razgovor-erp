@@ -45,7 +45,7 @@ interface TariffPrice {
   id: string
   name: string
   tariff_id: string
-  discount: number
+  price: number
   created_at: string
 }
 
@@ -76,12 +76,19 @@ const fetchTariffs = async () => {
     
     if (fetchError) {
       error.value = fetchError.message
+      toast.error('Failed to load tariffs', {
+        description: fetchError.message
+      })
       return
     }
     
     tariffs.value = data || []
   } catch (err) {
-    error.value = err instanceof Error ? err.message : 'Failed to fetch tariffs'
+    const errorMessage = err instanceof Error ? err.message : 'Failed to fetch tariffs'
+    error.value = errorMessage
+    toast.error('Failed to load tariffs', {
+      description: errorMessage
+    })
   }
 }
 
@@ -90,17 +97,24 @@ const fetchTariffPrices = async () => {
   try {
     const { data, error: fetchError } = await supabase
       .from('tariff_prices')
-      .select('id, name, tariff_id, discount, created_at')
+      .select('id, name, tariff_id, price, created_at')
       .order('created_at', { ascending: false })
     
     if (fetchError) {
       error.value = fetchError.message
+      toast.error('Failed to load tariff prices', {
+        description: fetchError.message
+      })
       return
     }
     
     tariffPrices.value = data || []
   } catch (err) {
-    error.value = err instanceof Error ? err.message : 'Failed to fetch tariff prices'
+    const errorMessage = err instanceof Error ? err.message : 'Failed to fetch tariff prices'
+    error.value = errorMessage
+    toast.error('Failed to load tariff prices', {
+      description: errorMessage
+    })
   }
 }
 
@@ -156,10 +170,40 @@ const openAddPriceModal = (tariffId?: string) => {
   showAddPriceModal.value = true
 }
 
+// Format price for display
+const formatPrice = (price: number) => {
+  return new Intl.NumberFormat('uz-UZ', {
+    style: 'currency',
+    currency: 'UZS',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  }).format(price)
+}
+
+// Validate price input
+const validatePrice = (price: number) => {
+  if (isNaN(price) || price <= 0) {
+    return 'Price must be a positive number'
+  }
+  if (price > 999999999999) { // 999 billion limit
+    return 'Price is too large'
+  }
+  return null
+}
+
 // Add new tariff price
-const addTariffPrice = async (tariffId: string, name: string, discount: number) => {
+const addTariffPrice = async (tariffId: string, name: string, price: number) => {
   try {
     isAddingPrice.value = true
+    
+    // Validate price
+    const priceError = validatePrice(price)
+    if (priceError) {
+      toast.error('Invalid price', {
+        description: priceError
+      })
+      return
+    }
     
     // Find tariff name for better toast message
     const tariff = tariffs.value.find(t => t.id === tariffId)
@@ -170,7 +214,7 @@ const addTariffPrice = async (tariffId: string, name: string, discount: number) 
       .insert([{ 
         name,
         tariff_id: tariffId,
-        discount
+        price
       }])
       .select()
     
@@ -185,7 +229,7 @@ const addTariffPrice = async (tariffId: string, name: string, discount: number) 
     if (data && data[0]) {
       tariffPrices.value.unshift(data[0])
       toast.success('Price added successfully', {
-        description: `"${name}" (${discount}% discount) added to ${tariffName}`
+        description: `"${name}" (${formatPrice(price)}) added to ${tariffName}`
       })
     }
   } catch (err) {
@@ -393,9 +437,8 @@ onMounted(() => {
                     <div class="flex items-start justify-between">
                       <div class="flex-1">
                         <h5 class="font-medium text-gray-900">{{ price.name }}</h5>
-                        <div class="mt-1 flex items-center gap-2">
-                          <span class="text-lg font-semibold text-green-600">{{ price.discount }}%</span>
-                          <span class="text-xs text-gray-500">discount</span>
+                        <div class="mt-1">
+                          <span class="text-lg font-semibold text-green-600">{{ formatPrice(price.price) }}</span>
                         </div>
                         <p class="text-xs text-gray-400 mt-2">Added {{ new Date(price.created_at).toLocaleDateString() }}</p>
                       </div>

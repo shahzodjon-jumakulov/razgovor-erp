@@ -5,6 +5,7 @@ import DeleteUserDialog from '~/components/users/DeleteUserDialog.vue'
 import LoadingState from '~/components/ui/LoadingState.vue'
 import ErrorState from '~/components/ui/ErrorState.vue'
 import ErrorToast from '~/components/ui/ErrorToast.vue'
+import { toast } from 'vue-sonner'
 import { 
   Table, 
   TableBody, 
@@ -70,12 +71,19 @@ const fetchUsers = async () => {
     
     if (fetchError) {
       error.value = fetchError.message
+      toast.error('Failed to load users', {
+        description: fetchError.message
+      })
       return
     }
     
     users.value = data || []
   } catch (err) {
-    error.value = err instanceof Error ? err.message : 'Failed to fetch users'
+    const errorMessage = err instanceof Error ? err.message : 'Failed to fetch users'
+    error.value = errorMessage
+    toast.error('Failed to load users', {
+      description: errorMessage
+    })
   } finally {
     isLoading.value = false
   }
@@ -92,6 +100,9 @@ const toggleApproval = async (userId: string, currentStatus: boolean) => {
     
     if (updateError) {
       console.error('Error updating approval status:', updateError)
+      toast.error('Failed to update approval status', {
+        description: updateError.message
+      })
       return
     }
     
@@ -99,9 +110,13 @@ const toggleApproval = async (userId: string, currentStatus: boolean) => {
     const userIndex = users.value.findIndex(user => user.id === userId)
     if (userIndex !== -1 && users.value[userIndex]) {
       users.value[userIndex].is_approved = newStatus
+      toast.success(`User ${newStatus ? 'approved' : 'unapproved'} successfully`)
     }
   } catch (err) {
     console.error('Error toggling approval:', err)
+    toast.error('Failed to update approval status', {
+      description: err instanceof Error ? err.message : 'An unexpected error occurred'
+    })
   }
 }
 
@@ -115,6 +130,9 @@ const updateSalesId = async (userId: string, salesId: string) => {
     
     if (updateError) {
       console.error('Error updating sales ID:', updateError)
+      toast.error('Failed to update sales ID', {
+        description: updateError.message
+      })
       return
     }
     
@@ -122,9 +140,13 @@ const updateSalesId = async (userId: string, salesId: string) => {
     const userIndex = users.value.findIndex(user => user.id === userId)
     if (userIndex !== -1 && users.value[userIndex]) {
       users.value[userIndex].sales_id = salesId || undefined
+      toast.success('Sales ID updated successfully')
     }
   } catch (err) {
     console.error('Error updating sales ID:', err)
+    toast.error('Failed to update sales ID', {
+      description: err instanceof Error ? err.message : 'An unexpected error occurred'
+    })
   }
 }
 
@@ -160,12 +182,23 @@ const handleDeleteUser = async () => {
     // Remove user from local state on success
     users.value = users.value.filter(user => user.id !== userToDelete.value!.id)
     
+    // Show success toast
+    toast.success('User deleted successfully', {
+      description: 'The user account has been permanently removed'
+    })
+    
     // Close dialog and cleanup
     showDeleteDialog.value = false
     userToDelete.value = null
   } catch (err: any) {
     console.error('Error deleting user:', err)
-    deleteError.value = err?.data?.message || err?.message || 'Failed to delete user'
+    const errorMessage = err?.data?.message || err?.message || 'Failed to delete user'
+    deleteError.value = errorMessage
+    
+    // Show error toast
+    toast.error('Failed to delete user', {
+      description: errorMessage
+    })
   } finally {
     isDeleting.value = false
   }

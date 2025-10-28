@@ -22,16 +22,6 @@ export const protectedRoutes: RoutePermission[] = [
   
   // Teaching staff routes (teachers and head_teaching)
   {
-    path: '/students',
-    allowedRoles: ['teacher', 'head_teaching', 'superadmin'],
-    description: 'Student management - teaching staff'
-  },
-  {
-    path: '/students/*',
-    allowedRoles: ['teacher', 'head_teaching', 'superadmin'],
-    description: 'Student management sub-pages - teaching staff'
-  },
-  {
     path: '/lessons',
     allowedRoles: ['teacher', 'head_teaching', 'superadmin'],
     description: 'Lesson management - teaching staff'
@@ -53,6 +43,16 @@ export const protectedRoutes: RoutePermission[] = [
   },
   
   // Sales staff routes
+  {
+    path: '/sales',
+    allowedRoles: ['sales', 'head_sales', 'superadmin'],
+    description: 'Sales dashboard - sales staff'
+  },
+  {
+    path: '/sales/*',
+    allowedRoles: ['sales', 'head_sales', 'superadmin'],
+    description: 'Sales sub-pages - sales staff'
+  },
   {
     path: '/leads',
     allowedRoles: ['sales', 'head_sales', 'superadmin'],
@@ -143,11 +143,6 @@ export const getNavigationItems = (userRole: UserRole | null) => {
   if (['teacher', 'head_teaching', 'superadmin'].includes(userRole)) {
     navItems.push(
       {
-        name: 'Students',
-        path: '/students',
-        icon: 'GraduationCap'
-      },
-      {
         name: 'Lessons',
         path: '/lessons',
         icon: 'BookOpen'
@@ -162,11 +157,18 @@ export const getNavigationItems = (userRole: UserRole | null) => {
   
   // Sales staff routes
   if (['sales', 'head_sales', 'superadmin'].includes(userRole)) {
-    navItems.push({
-      name: 'Leads',
-      path: '/leads',
-      icon: 'Target'
-    })
+    navItems.push(
+      {
+        name: 'Sales',
+        path: '/sales',
+        icon: 'GraduationCap'
+      },
+      {
+        name: 'Leads',
+        path: '/leads',
+        icon: 'Target'
+      }
+    )
   }
   
   // Management routes
